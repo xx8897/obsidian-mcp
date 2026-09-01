@@ -1,8 +1,26 @@
 # Obsidian MCP Server (obsidian-mcp)
 
-這是一個專為 Model Context Protocol (MCP) 設計的本地伺服器，旨在讓 AI 代理（如 Antigravity IDE、Claude Desktop 等）能夠直接讀寫您的 [Obsidian](https://obsidian.md/) Vault。
+這是一個專為 Model Context Protocol (MCP) 設計的本地伺服器，旨在讓 AI 代理（如 Antigravity IDE、Claude Desktop 等）能夠直接讀寫您的 [Obsidian](https://obsidianmd.com/) Vault。
 
-**核心理念**：直接以 Node.js 讀寫 Obsidian Vault 中的 `.md` 檔案，無任何中間資料庫或 JSON 緩存層，完美保留 Obsidian 檔案的純粹性，並且原生支援 Frontmatter 標籤。
+---
+
+## 📖 什麼是 MCP (Model Context Protocol)?
+
+**MCP** 的全名是 **Model Context Protocol**（模型上下文協定）。
+
+它是由 Anthropic（Claude 模型的開發商）所推動的一項開源標準協定。您可以把它想像成是「**AI 界的 USB Type-C 介面**」。
+
+### 解決了什麼問題？
+在過去，如果想讓 AI 幫您讀取本地檔案、查詢資料庫、或操作特定的應用程式，每個 AI 工具（如 ChatGPT, Claude, GitHub Copilot）都需要開發專屬的外掛（Plugins）。這導致生態系非常破碎。
+
+MCP 提出了一個標準化的雙向溝通協定。只要開發**一次** MCP Server（例如我們現在做的 `obsidian-mcp`），任何支援 MCP 標準的 AI 客戶端（Host）都能夠直接連上它，並取得它的能力。
+
+### MCP 的三大核心功能：
+1. **Resources (資源)**：讓 AI 可以讀取您的資料（例如：讀取特定檔案內容、API 回傳的資料）。
+2. **Tools (工具)**：讓 AI 可以代替您執行動作（例如：新增筆記、發送 API 請求、控制智慧家電）。這也是我們本專案主要使用的功能。
+3. **Prompts (提示詞)**：提供標準化的對話範本給 AI 使用。
+
+**簡而言之：MCP 讓 AI 能夠以安全、標準化的方式，打破沙盒限制，安全地「看見」並「操作」您的本地電腦資源。**
 
 ---
 
@@ -15,11 +33,11 @@ graph TB
     subgraph MACHINE["🖥️ 本機環境"]
         direction TB
 
-        subgraph AI["AI 層"]
-            IDE["🤖 Antigravity IDE (或任何 MCP Client)"]
+        subgraph AI["AI 層 (MCP Host)"]
+            IDE["🤖 Antigravity IDE (或 Claude Desktop)"]
         end
 
-        subgraph MCP["MCP 層"]
+        subgraph MCP["MCP 層 (MCP Server)"]
             CFG["⚙️ mcp_config.json"]
             SRV["📦 obsidian-mcp\n(Node.js 子行程)"]
         end
@@ -32,16 +50,17 @@ graph TB
         end
     end
 
-    IDE -- "啟動並透過 stdio 溝通" --> SRV
-    SRV -- "直接讀寫 .md 檔案" --> INBOX
-    SRV -- "直接讀寫 .md 檔案" --> DAILY
+    IDE -- "1. 啟動並透過 stdio (標準輸入輸出) 溝通" --> SRV
+    SRV -- "2. JSON-RPC 呼叫 Tools" --> SRV
+    SRV -- "3. 直接讀寫 .md 檔案" --> INBOX
+    SRV -- "3. 直接讀寫 .md 檔案" --> DAILY
     OBS -- "即時同步顯示" --> INBOX
     OBS -- "即時同步顯示" --> DAILY
 ```
 
 ### 2. Vault 資料結構與 Frontmatter
 
-寫入的筆記會自動帶有以下格式的 Frontmatter Metadata，確保能與 Obsidian 原生的標籤及 Graph View 完美整合：
+本專案的核心理念是**直接讀寫 Markdown 檔案，不依賴任何中間資料庫**。寫入的筆記會自動帶有以下格式的 Frontmatter Metadata，確保能與 Obsidian 原生的標籤及 Graph View 完美整合：
 
 ```markdown
 ---
@@ -72,7 +91,7 @@ source: obsidian-mcp
 
 ### 環境要求
 - Node.js (v18 或以上)
-- 您的本機需要有一個用來存放 Markdown 檔案的資料夾（如 Obsidian Vault）。
+- 您的本機需要有一個用來存放 Markdown 檔案的資料夾（如 Obsidian Vault 或本專案使用的 `docs/`）。
 
 ### 1. 編譯專案
 ```bash
