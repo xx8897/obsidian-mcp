@@ -2,9 +2,9 @@
   "mcpServers": {
     "obsidian-mcp": {
       "command": "node",
-      "args": ["c:/Users/xx8897/codespace/projects/obsidian-mcp/dist/index.js"],
+      "args": ["D:/codespace/projects/obsidian-mcp/dist/index.js"],
       "env": {
-        "VAULT_PATH": "c:/Users/xx8897/codespace/docs"
+        "VAULT_PATH": "D:/codespace/docs"
       }
     }
   }
