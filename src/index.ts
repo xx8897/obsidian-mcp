@@ -24,8 +24,19 @@ import { addDailyLogSchema, addDailyLog } from "./tools/add-daily.js";
 import { listNotesSchema, listNotes } from "./tools/list-notes.js";
 import { searchNotesSchema, searchNotes } from "./tools/search-notes.js";
 import { getNoteSchema, getNote } from "./tools/get-note.js";
+import { getBacklinksSchema, getBacklinks } from "./tools/get-backlinks.js";
+import { findRelatedNotesSchema, findRelatedNotes } from "./tools/find-related.js";
 
-import { AddNoteArgs, AppendToNoteArgs, UpdateFrontmatterArgs } from "./types.js";
+import {
+  AddNoteArgs,
+  AppendToNoteArgs,
+  UpdateFrontmatterArgs,
+  GetNoteArgs,
+  ListNotesArgs,
+  SearchNotesArgs,
+  GetBacklinksArgs,
+  FindRelatedNotesArgs,
+} from "./types.js";
 
 // 建立 MCP Server 實例
 const server = new Server(
@@ -40,17 +51,19 @@ const server = new Server(
   }
 );
 
-// 回報所有可用的 Tools
+// 回報所有可用的 Tools 清單
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
       addNoteSchema,
       appendNoteSchema,
       updateFrontmatterSchema,
-      addDailyLogSchema,
+      getNoteSchema,
       listNotesSchema,
       searchNotesSchema,
-      getNoteSchema,
+      getBacklinksSchema,
+      findRelatedNotesSchema,
+      addDailyLogSchema,
     ],
   };
 });
@@ -72,17 +85,23 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case "update_frontmatter":
         result = await updateFrontmatter(args as unknown as UpdateFrontmatterArgs);
         break;
-      case "add_daily_log":
-        result = await addDailyLog(args as { content: string });
+      case "get_note":
+        result = await getNote(args as unknown as GetNoteArgs & { note_path?: string });
         break;
       case "list_notes":
-        result = await listNotes(args as { folder?: string });
+        result = await listNotes(args as unknown as ListNotesArgs);
         break;
       case "search_notes":
-        result = await searchNotes(args as { query: string });
+        result = await searchNotes(args as unknown as SearchNotesArgs);
         break;
-      case "get_note":
-        result = await getNote(args as { note_path: string });
+      case "get_backlinks":
+        result = await getBacklinks(args as unknown as GetBacklinksArgs);
+        break;
+      case "find_related_notes":
+        result = await findRelatedNotes(args as unknown as FindRelatedNotesArgs);
+        break;
+      case "add_daily_log":
+        result = await addDailyLog(args as { content: string });
         break;
       default:
         throw new Error(`未知的 Tool：${name}`);
