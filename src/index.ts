@@ -121,6 +121,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 // 啟動 stdio transport
 async function main() {
+  if (!process.env.VAULT_PATH) {
+    console.error("[obsidian-mcp] 錯誤：請設定環境變數 VAULT_PATH");
+    process.exit(1);
+  }
+
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error("[obsidian-mcp] 伺服器已啟動，等待指令...");

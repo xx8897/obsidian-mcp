@@ -14,19 +14,15 @@ import * as fs from "fs";
 import * as path from "path";
 import { resolveSafePath, sanitizeFolderName } from "./security.js";
 
-// 從環境變數取得 Vault 根目錄路徑
-const VAULT_PATH = process.env.VAULT_PATH;
-
-if (!VAULT_PATH) {
-  console.error("[obsidian-mcp] 錯誤：請設定環境變數 VAULT_PATH");
-  process.exit(1);
-}
-
 /**
  * 取得 Vault 根目錄的絕對路徑
  */
 export function getVaultPath(): string {
-  return path.resolve(VAULT_PATH!);
+  const vaultPath = process.env.VAULT_PATH;
+  if (!vaultPath) {
+    throw new Error("[obsidian-mcp] 錯誤：請設定環境變數 VAULT_PATH");
+  }
+  return path.resolve(vaultPath);
 }
 
 /**
