@@ -73,12 +73,13 @@ source: obsidian-mcp
 
 ---
 
-## 🛠️ 提供的 9 大 MCP Tools (v2.0 架構)
+## 🛠️ 提供的 10 大 MCP Tools (v2.1 架構)
 
-本伺服器註冊了以下工具供 AI 使用，全數具備 `resolveSafePath` 邊界防穿透保護：
+本伺服器註冊了以下工具供 AI 使用，全數具備 `resolveSafePath` 邊界防穿透保護與 Token 預算防護：
 
 | Tool 名稱 | 模式 | 說明 | 主要引數 |
 |:---|:---:|:---|:---|
+| `vault_overview` | 唯讀 | **全庫知識圖譜體檢**：出入度統計、導航孤島、知識沉澱、未建幽靈連結與核心樞紐 | `limit?` (預設 20), `folder?` |
 | `add_note` | 寫入 | 新增筆記，支援任意子目錄與自動遞迴建檔 | `title`, `content`, `folder?`, `tags?` |
 | `append_to_note` | 寫入 | 安全追加內容至文末，或精確插入指定章節標題下方 | `path`, `content`, `targetHeading?` |
 | `update_frontmatter` | 寫入 | 原地增減標籤、更新狀態與自訂欄位，正文 100% 無損 | `path`, `addTags?`, `removeTags?`, `status?`, `customFields?` |
@@ -91,12 +92,14 @@ source: obsidian-mcp
 
 ---
 
-## 🛡️ 安全防護架構 (Path Traversal Guard)
+## 🛡️ 安全防護架構 (Path Traversal & Security Guard)
 
-伺服器全面內建 `resolveSafePath` 物理邊界防禦機制：
+伺服器全面內建 `resolveSafePath` 與 `safeDecodeURI` 物理邊界防禦機制：
+- 內建**等冪收斂式 URL 解碼 (safeDecodeURI)**，徹底根絕 `%25252e` 多重編碼繞過漏洞，遇畸形編碼優雅安全降級。
+- 內建 **Null Byte (`\0`) 注入攔截**，在邊界直接拋出 `SecurityViolationError`，防止底層檔案系統異常。
 - 嚴格校驗所有傳入的相對路徑與資料夾名稱，防止任何以 `../` 跳脫 `VAULT_PATH` 的路徑穿透攻擊。
-- 自動過濾 `.`、`..` 與非法字元，確保多層目錄結構的乾淨與安全。
-- 自動忽略 `.obsidian/`、`.git/` 與 `node_modules/` 等系統與隱藏目錄。
+- 跨目錄同名檔案（如 `a/README.md` 與 `b/README.md`）以相對路徑為主鍵，保證實體檔案節點 100% 獨立不被覆蓋。
+- 自動過濾 `.`、`..` 與非法字元，自動忽略 `.obsidian/`、`.git/` 與 `node_modules/` 等系統與隱藏目錄。
 - 內建 `stripCodeBlocks` 語法屏蔽，程式碼區塊（` ``` `）內的語法示範絕不會被誤判為雙向連結。
 
 ---

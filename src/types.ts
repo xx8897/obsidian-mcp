@@ -61,18 +61,35 @@ export interface RelatedNoteItem {
 }
 
 /**
- * 全庫知識圖譜體檢概覽
+ * 全庫知識圖譜體檢概覽資料模型
  */
-export interface VaultOverview {
+export interface VaultOverviewResult {
   totalNotes: number;
-  tagCounts: Record<string, number>;
+  totalLinks: number;
+  orphanCount: number;
+  orphanRate: string;
   orphanNotes: string[];
-  centralHubs: Array<{ path: string; linkCount: number }>;
+  sinkCount: number;
+  sinkNotes: string[];
+  danglingCount: number;
+  danglingLinks: string[];
+  centralHubs: Array<{ path: string; title: string; linkCount: number }>;
+  tagCounts: Record<string, number>;
 }
 
+export type VaultOverview = VaultOverviewResult;
+
 /* =========================================================
- * 8 大 MCP Tools 輸入引數 (Input Arguments) 定義
+ * 10 大 MCP Tools 輸入引數 (Input Arguments) 定義
  * ========================================================= */
+
+/**
+ * 0. vault_overview 引數定義（全庫體檢與 Token 預算防護）
+ */
+export interface VaultOverviewArgs {
+  limit?: number;
+  folder?: string;
+}
 
 /**
  * 1. add_note 引數定義（支援任意子資料夾與自動 mkdir）

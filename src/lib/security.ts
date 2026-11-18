@@ -23,18 +23,43 @@ export class SecurityViolationError extends Error {
 }
 
 /**
+ * 等冪收斂式 URL 編碼解碼器（支援多重編碼還原與畸形防護）
+ */
+export function safeDecodeURI(input: string): string {
+  let current = (input || "").trim();
+  for (let i = 0; i < 5; i++) {
+    try {
+      const next = decodeURIComponent(current);
+      if (next === current) break;
+      current = next;
+    } catch {
+      break;
+    }
+  }
+  return current;
+}
+
+/**
  * 嚴密校驗相對路徑是否合法位於 Vault 根目錄內，物理杜絕 ../ 逃逸攻擊
  * 
  * @param vaultRoot Vault 根目錄絕對路徑
  * @param relativePath 欲存取之相對檔案或資料夾路徑
  * @returns 經安全解析之目標絕對路徑
- * @throws {SecurityViolationError} 當路徑試圖跳出 Vault 邊界時拋出
+ * @throws {SecurityViolationError} 當路徑試圖跳出 Vault 邊界或含有空字元時拋出
  */
 export function resolveSafePath(vaultRoot: string, relativePath: string): string {
   const normalizedRoot = path.resolve(vaultRoot);
-  // 防止空路徑或非字串
-  const cleanRel = (relativePath || "").trim();
-  const targetPath = path.resolve(normalizedRoot, cleanRel);
+  // 等冪解碼以防多重 URL 編碼逃逸
+  const decoded = safeDecodeURI(relativePath);
+
+  // 空字元注入防禦
+  if (decoded.includes("\0")) {
+    throw new SecurityViolationError(
+      `[安全防禦攔截] 檢測到非法 Null Byte 注入嘗試: "${relativePath}"！操作已物理強制阻斷。`
+    );
+  }
+
+  const targetPath = path.resolve(normalizedRoot, decoded);
 
   // 必須以 normalizedRoot + path.sep 開頭，或者剛好等於 normalizedRoot 本身
   const isInside =
@@ -54,7 +79,8 @@ export function resolveSafePath(vaultRoot: string, relativePath: string): string
  * 驗證並清理子資料夾名稱（避免非法字元）
  */
 export function sanitizeFolderName(folder: string): string {
-  return folder
+  const decoded = safeDecodeURI(folder);
+  return decoded
     .split(/[\\/]/)
     .map((segment) =>
       segment

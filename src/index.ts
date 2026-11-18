@@ -26,6 +26,7 @@ import { searchNotesSchema, searchNotes } from "./tools/search-notes.js";
 import { getNoteSchema, getNote } from "./tools/get-note.js";
 import { getBacklinksSchema, getBacklinks } from "./tools/get-backlinks.js";
 import { findRelatedNotesSchema, findRelatedNotes } from "./tools/find-related.js";
+import { vaultOverviewSchema, vaultOverview } from "./tools/vault-overview.js";
 
 import {
   AddNoteArgs,
@@ -36,13 +37,14 @@ import {
   SearchNotesArgs,
   GetBacklinksArgs,
   FindRelatedNotesArgs,
+  VaultOverviewArgs,
 } from "./types.js";
 
 // 建立 MCP Server 實例
 const server = new Server(
   {
     name: "obsidian-mcp",
-    version: "2.0.0",
+    version: "2.1.0",
   },
   {
     capabilities: {
@@ -55,6 +57,7 @@ const server = new Server(
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
+      vaultOverviewSchema,
       addNoteSchema,
       appendNoteSchema,
       updateFrontmatterSchema,
@@ -76,6 +79,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     let result: string;
 
     switch (name) {
+      case "vault_overview":
+        result = await vaultOverview(args as unknown as VaultOverviewArgs);
+        break;
       case "add_note":
         result = await addNote(args as unknown as AddNoteArgs);
         break;

@@ -49,14 +49,15 @@ export function extractBacklinksForTarget(
   content: string
 ): BacklinkItem[] {
   const cleanTarget = targetTitle.trim().replace(/\.md$/, "").toLowerCase();
-  const wikilinkRegex = /\[\[(.*?)\]\]/g;
   const sanitizedContent = stripCodeBlocks(content);
   const lines = sanitizedContent.split(/\r?\n/);
   const items: BacklinkItem[] = [];
 
   for (const line of lines) {
+    // 每次掃描新行時使用獨立無狀態正則，徹底杜絕 lastIndex 跨行殘留
+    const lineRegex = /\[\[(.*?)\]\]/g;
     let match: RegExpExecArray | null;
-    while ((match = wikilinkRegex.exec(line)) !== null) {
+    while ((match = lineRegex.exec(line)) !== null) {
       const linkBody = match[1];
       const linkTarget = linkBody.split("|")[0].split("#")[0].trim();
       const targetBase = path.basename(linkTarget, ".md").toLowerCase();
