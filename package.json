@@ -1,6 +1,6 @@
 {
   "name": "obsidian-mcp",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "MCP Server for reading, writing, and graph analysis directly into an Obsidian Vault",
   "license": "Apache-2.0",
   "author": "xx8897",
