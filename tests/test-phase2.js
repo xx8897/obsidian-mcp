@@ -95,6 +95,27 @@ source: obsidian-mcp
   "utf-8"
 );
 
+// Note E: 包含程式碼區塊內的假連結，驗證防禦屏蔽
+fs.writeFileSync(
+  path.join(tempVaultDir, "inbox", "note-e.md"),
+  `---
+title: Note E
+date: 2026-11-18
+tags:
+  - docs
+source: obsidian-mcp
+---
+
+這是 Note E 技術文件。
+以下為 Markdown 範例語法，絕不應被解析為反向連結：
+\`\`\`markdown
+這是程式碼區塊內的 [[note-b]] 範例。
+\`\`\`
+以及行內程式碼 \`[[note-b]]\`。
+`,
+  "utf-8"
+);
+
 console.log("🧪 開始執行 Phase 2 讀取與圖譜功能單元測試...");
 
 async function runTests() {
@@ -141,6 +162,7 @@ async function runTests() {
   assert.ok(backlinksRes.includes("Note A") || backlinksRes.includes("note-a.md"), "Note A 應作為反向連結來源");
   assert.ok(backlinksRes.includes("Note D") || backlinksRes.includes("note-d.md"), "Note D 應作為反向連結來源");
   assert.strictEqual(backlinksRes.includes("Note C"), false, "Note C 未引用 note-b 不應列入");
+  assert.strictEqual(backlinksRes.includes("Note E"), false, "Note E 的程式碼區塊假連結應被成功屏蔽");
   console.log("  ✅ 測試 4 通過：雙向反向連結與摘要抓取正確");
 
   // 測試 5：find_related_notes Jaccard 概念推薦
@@ -149,9 +171,17 @@ async function runTests() {
   assert.ok(relatedRes.includes("Note B") || relatedRes.includes("note-b.md"), "Note B 與 Note A 有共同標籤與雙鏈，應優先被推薦");
   console.log("  ✅ 測試 5 通過：Jaccard 關聯筆記演算法推薦正確");
 
+  // 測試 6：程式碼區塊內 Wikilink 防禦屏蔽測試 (stripCodeBlocks)
+  console.log("\n▶️ 測試 6: 程式碼區塊假雙向連結屏蔽驗證 (Note E)");
+  const { extractOutgoingLinks } = await import("../dist/tools/find-related.js");
+  const rawNoteE = fs.readFileSync(path.join(tempVaultDir, "inbox", "note-e.md"), "utf-8");
+  const outgoingE = extractOutgoingLinks(rawNoteE);
+  assert.strictEqual(outgoingE.has("note-b"), false, "程式碼區塊與行內代碼內的 [[note-b]] 應被徹底屏蔽");
+  console.log("  ✅ 測試 6 通過：代碼區塊假雙向連結已被物理屏蔽");
+
   // 清理測試臨時目錄
   fs.rmSync(tempVaultDir, { recursive: true, force: true });
-  console.log("\n🎉 Phase 2 核心功能全部 5 項驗收測試 100% 通過！");
+  console.log("\n🎉 Phase 2 核心功能全部 6 項驗收測試 100% 通過！");
 }
 
 runTests().catch((err) => {

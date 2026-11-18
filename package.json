@@ -1,14 +1,14 @@
 {
   "name": "obsidian-mcp",
-  "version": "1.0.0",
-  "description": "MCP Server for reading and writing notes directly into an Obsidian Vault",
+  "version": "2.0.0",
+  "description": "MCP Server for reading, writing, and graph analysis directly into an Obsidian Vault",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
-    "test": "npm run build && node tests/test-security.js"
+    "test": "npm run build && node tests/test-security.js && node tests/test-phase1.js && node tests/test-phase2.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",

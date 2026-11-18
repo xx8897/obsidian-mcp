@@ -73,17 +73,31 @@ source: obsidian-mcp
 
 ---
 
-## 🛠️ 提供的 MCP Tools
+## 🛠️ 提供的 9 大 MCP Tools (v2.0 架構)
 
-本伺服器註冊了以下工具供 AI 使用：
+本伺服器註冊了以下工具供 AI 使用，全數具備 `resolveSafePath` 邊界防穿透保護：
 
-| Tool 名稱 | 說明 | 寫入/讀取目標 |
-|:---|:---|:---|
-| `add_note` | 新增一則筆記（可指定標題、內容、標籤） | `inbox/<title>.md` |
-| `add_daily_log` | 追加內容至當天的日誌頁，若不存在則自動建立 | `daily/YYYY-MM-DD.md` |
-| `get_note` | 讀取指定路徑的筆記全文 | 唯讀 |
-| `list_notes` | 列出 Vault 內所有筆記與 metadata（支援資料夾過濾） | 唯讀 |
-| `search_notes` | 跨檔案全文關鍵字搜尋 | 唯讀 |
+| Tool 名稱 | 模式 | 說明 | 主要引數 |
+|:---|:---:|:---|:---|
+| `add_note` | 寫入 | 新增筆記，支援任意子目錄與自動遞迴建檔 | `title`, `content`, `folder?`, `tags?` |
+| `append_to_note` | 寫入 | 安全追加內容至文末，或精確插入指定章節標題下方 | `path`, `content`, `targetHeading?` |
+| `update_frontmatter` | 寫入 | 原地增減標籤、更新狀態與自訂欄位，正文 100% 無損 | `path`, `addTags?`, `removeTags?`, `status?`, `customFields?` |
+| `add_daily_log` | 寫入 | 追加內容至當日日誌頁，若不存在則自動初始化建立 | `content` |
+| `get_note` | 唯讀 | 安全讀取指定筆記全文與 Frontmatter 元數據 | `path` |
+| `list_notes` | 唯讀 | 列出筆記清單，支援目錄限定、標籤篩選與筆數上限 | `folder?`, `tag?`, `limit?` (預設 50) |
+| `search_notes` | 唯讀 | 全文檢索筆記，具備標籤限定與長度受控摘要 | `query`, `tags?`, `folder?`, `limit?` (預設 10) |
+| `get_backlinks` | 唯讀 | **雙向反向連結檢索**：查詢引用此筆記的所有來源與句子上下文 | `title` |
+| `find_related_notes` | 唯讀 | **知識圖譜概念推薦**：基於共同標籤與雙鏈交集計算 Jaccard 相似度 | `path`, `limit?` (預設 5) |
+
+---
+
+## 🛡️ 安全防護架構 (Path Traversal Guard)
+
+伺服器全面內建 `resolveSafePath` 物理邊界防禦機制：
+- 嚴格校驗所有傳入的相對路徑與資料夾名稱，防止任何以 `../` 跳脫 `VAULT_PATH` 的路徑穿透攻擊。
+- 自動過濾 `.`、`..` 與非法字元，確保多層目錄結構的乾淨與安全。
+- 自動忽略 `.obsidian/`、`.git/` 與 `node_modules/` 等系統與隱藏目錄。
+- 內建 `stripCodeBlocks` 語法屏蔽，程式碼區塊（` ``` `）內的語法示範絕不會被誤判為雙向連結。
 
 ---
 

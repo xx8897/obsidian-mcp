@@ -37,14 +37,17 @@ export const findRelatedNotesSchema = {
 };
 
 /**
- * 從筆記內文中提取所有 Wikilinks 目標標題集合
+ * 從筆記內文中提取所有 Wikilinks 目標標題集合（自動屏蔽程式碼區塊中的假連結）
  */
 export function extractOutgoingLinks(content: string): Set<string> {
   const links = new Set<string>();
+  const sanitizedContent = content
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/`[^`\n]*`/g, "");
   const wikilinkRegex = /\[\[(.*?)\]\]/g;
   let match: RegExpExecArray | null;
 
-  while ((match = wikilinkRegex.exec(content)) !== null) {
+  while ((match = wikilinkRegex.exec(sanitizedContent)) !== null) {
     const rawTarget = match[1].split("|")[0].split("#")[0].trim();
     if (rawTarget) {
       links.add(path.basename(rawTarget, ".md").toLowerCase());

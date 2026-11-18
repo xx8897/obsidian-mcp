@@ -31,6 +31,15 @@ export const getBacklinksSchema = {
 };
 
 /**
+ * 移除 Markdown 中的程式碼區塊 (``` ... ```) 與行內代碼 (`...`)，防止範例程式碼被誤判為雙向連結
+ */
+export function stripCodeBlocks(content: string): string {
+  return content
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/`[^`\n]*`/g, "");
+}
+
+/**
  * 從文字內容中提取指定筆記的所有反向連結引用條目
  */
 export function extractBacklinksForTarget(
@@ -41,7 +50,8 @@ export function extractBacklinksForTarget(
 ): BacklinkItem[] {
   const cleanTarget = targetTitle.trim().replace(/\.md$/, "").toLowerCase();
   const wikilinkRegex = /\[\[(.*?)\]\]/g;
-  const lines = content.split(/\r?\n/);
+  const sanitizedContent = stripCodeBlocks(content);
+  const lines = sanitizedContent.split(/\r?\n/);
   const items: BacklinkItem[] = [];
 
   for (const line of lines) {
