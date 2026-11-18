@@ -1,18 +1,14 @@
 import matter from "gray-matter";
 import * as fs from "fs";
+import { Frontmatter } from "../types.js";
 
-export interface NoteFrontmatter {
-  title: string;
-  date: string;
-  tags?: string[];
-  source: "obsidian-mcp";
-}
+export type NoteFrontmatter = Frontmatter;
 
 /**
  * 將 Frontmatter + 內文組合成完整的 Markdown 字串
  */
 export function buildNoteContent(
-  frontmatter: NoteFrontmatter,
+  frontmatter: Record<string, any>,
   body: string
 ): string {
   return matter.stringify(body, frontmatter);
@@ -22,7 +18,7 @@ export function buildNoteContent(
  * 讀取一個 .md 檔案，解析並回傳 { frontmatter, content }
  */
 export function readNote(filePath: string): {
-  frontmatter: Record<string, unknown>;
+  frontmatter: Record<string, any>;
   content: string;
 } {
   const raw = fs.readFileSync(filePath, "utf-8");
