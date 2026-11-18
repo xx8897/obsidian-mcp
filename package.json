@@ -2,13 +2,15 @@
   "name": "obsidian-mcp",
   "version": "2.1.0",
   "description": "MCP Server for reading, writing, and graph analysis directly into an Obsidian Vault",
+  "license": "Apache-2.0",
+  "author": "xx8897",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
-    "test": "npm run build && node tests/test-security.js && node tests/test-phase1.js && node tests/test-phase2.js && node tests/test-phase3.js && node tests/test-real-vault.js && node tests/test-mcp-stdio.js"
+    "test": "npm run build && node tests/test-security.js && node tests/test-phase1.js && node tests/test-phase2.js && node tests/test-phase3.js && node tests/test-phase4-fixes.js && node tests/test-real-vault.js && node tests/test-mcp-stdio.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",

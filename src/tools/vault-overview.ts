@@ -11,9 +11,15 @@
  */
 
 import * as path from "path";
-import { getVaultPath, getAllMdFiles, getSafeFilePath, sanitizeFolderName } from "../lib/vault.js";
+import {
+  getVaultPath,
+  getAllMdFiles,
+  getSafeFilePath,
+  sanitizeFolderName,
+  extractNormalizedTags,
+  extractOutgoingLinks,
+} from "../lib/vault.js";
 import { readNote } from "../lib/frontmatter.js";
-import { extractOutgoingLinks } from "./find-related.js";
 import { VaultOverviewArgs, VaultOverviewResult } from "../types.js";
 
 export const vaultOverviewSchema = {
@@ -79,13 +85,8 @@ export async function computeVaultOverview(args: VaultOverviewArgs): Promise<Vau
     try {
       const { frontmatter, content } = readNote(f);
 
-      // A. 標籤統計：單檔內部標籤去重 + 強制 toLowerCase 正規化
-      const rawTags = Array.isArray(frontmatter.tags) ? frontmatter.tags : [];
-      const noteUniqueTags = new Set<string>();
-      for (const t of rawTags) {
-        const cleanTag = String(t).trim().replace(/^#/, "").toLowerCase();
-        if (cleanTag) noteUniqueTags.add(cleanTag);
-      }
+      // A. 標籤統計：統一正規化標籤解析
+      const noteUniqueTags = extractNormalizedTags(frontmatter.tags);
       for (const t of noteUniqueTags) {
         tagCounts[t] = (tagCounts[t] || 0) + 1;
       }

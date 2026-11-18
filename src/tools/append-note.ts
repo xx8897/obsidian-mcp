@@ -11,7 +11,7 @@
  */
 
 import * as fs from "fs";
-import { getSafeFilePath } from "../lib/vault.js";
+import { getSafeFilePath, atomicWriteFileSync } from "../lib/vault.js";
 import { AppendToNoteArgs } from "../types.js";
 
 export const appendNoteSchema = {
@@ -54,9 +54,14 @@ export async function appendNote(args: AppendToNoteArgs): Promise<string> {
     const queryTitle = queryHeading.replace(/^#+\s*/, "").trim();
 
     let headingIndex = -1;
+    let inCodeBlock = false;
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
-      if (line.startsWith("#")) {
+      if (line.startsWith("```") || line.startsWith("~~~")) {
+        inCodeBlock = !inCodeBlock;
+        continue;
+      }
+      if (!inCodeBlock && line.startsWith("#")) {
         const lineTitle = line.replace(/^#+\s*/, "").trim();
         if (line === queryHeading || lineTitle === queryTitle) {
           headingIndex = i;
@@ -73,11 +78,19 @@ export async function appendNote(args: AppendToNoteArgs): Promise<string> {
     const headingLevel = headingMatch ? headingMatch[1].length : 2;
 
     let insertIndex = lines.length;
+    let inSubsequentCodeBlock = false;
     for (let i = headingIndex + 1; i < lines.length; i++) {
-      const m = lines[i].match(/^(#+)\s+/);
-      if (m && m[1].length <= headingLevel) {
-        insertIndex = i;
-        break;
+      const line = lines[i].trim();
+      if (line.startsWith("```") || line.startsWith("~~~")) {
+        inSubsequentCodeBlock = !inSubsequentCodeBlock;
+        continue;
+      }
+      if (!inSubsequentCodeBlock) {
+        const m = line.match(/^(#+)\s+/);
+        if (m && m[1].length <= headingLevel) {
+          insertIndex = i;
+          break;
+        }
       }
     }
 
@@ -103,6 +116,6 @@ export async function appendNote(args: AppendToNoteArgs): Promise<string> {
     updatedContent = `${baseRaw}\n\n${cleanContent}\n`;
   }
 
-  fs.writeFileSync(filePath, updatedContent, "utf-8");
+  atomicWriteFileSync(filePath, updatedContent);
   return `✅ 筆記追加成功：${args.path}`;
 }

@@ -17,13 +17,17 @@ import { GetBacklinksArgs, BacklinkItem } from "../types.js";
 
 export const getBacklinksSchema = {
   name: "get_backlinks",
-  description: "反向連結檢索：查詢全 Vault 中有哪些其他筆記透過 [[目標筆記]] 引用了此篇筆記",
+  description: "反向連結檢索：查詢全 Vault 中有哪些其他筆記透過 [[目標筆記]] 引用了此篇筆記，具備 Token 預算防護",
   inputSchema: {
     type: "object" as const,
     properties: {
       title: {
         type: "string",
         description: "目標筆記標題或檔名（例如：'cdp-mcp' 或 'note-b'）",
+      },
+      limit: {
+        type: "number",
+        description: "最大回傳反向連結筆數（預設 20，防止 Token 消耗過大）",
       },
     },
     required: ["title"],
@@ -80,6 +84,8 @@ export async function getBacklinks(args: GetBacklinksArgs): Promise<string> {
   const vaultPath = getVaultPath();
   const files = getAllMdFiles(vaultPath);
   const targetTitle = args.title.trim();
+  const targetBase = path.basename(targetTitle, ".md").toLowerCase();
+  const limit = typeof args.limit === "number" && args.limit > 0 ? args.limit : 20;
   const allBacklinks: BacklinkItem[] = [];
 
   for (const filePath of files) {
@@ -87,9 +93,10 @@ export async function getBacklinks(args: GetBacklinksArgs): Promise<string> {
       const relPath = path.relative(vaultPath, filePath).replace(/\\/g, "/");
       const { frontmatter, content } = readNote(filePath);
       const title = (frontmatter.title as string) ?? path.basename(filePath, ".md");
+      const fileBase = path.basename(filePath, ".md").toLowerCase();
 
-      // 自己對自己的引用不列為反向連結
-      if (title.toLowerCase() === targetTitle.toLowerCase()) {
+      // 自己對自己的引用不列為反向連結（雙重檢驗自訂標題與實體檔名）
+      if (title.toLowerCase() === targetTitle.toLowerCase() || fileBase === targetBase) {
         continue;
       }
 
@@ -104,9 +111,16 @@ export async function getBacklinks(args: GetBacklinksArgs): Promise<string> {
     return `📭 在全 Vault 中找不到任何引用「${targetTitle}」的反向連結筆記。`;
   }
 
-  const results = allBacklinks.map(
+  const total = allBacklinks.length;
+  const displayed = allBacklinks.slice(0, limit);
+  const results = displayed.map(
     (item) => `- **${item.sourceTitle}** (\`${item.sourcePath}\`)\n  > ${item.snippet}`
   );
 
-  return `🔗 共找到 ${allBacklinks.length} 處引用「${targetTitle}」的反向連結：\n\n${results.join("\n\n")}`;
+  let output = `🔗 共找到 ${total} 處引用「${targetTitle}」的反向連結：\n\n${results.join("\n\n")}`;
+  if (total > limit) {
+    output += `\n\nℹ️ 僅顯示前 ${limit} 則結果（其餘 ${total - limit} 處引用已受 Token 預算防護省略）。`;
+  }
+
+  return output;
 }

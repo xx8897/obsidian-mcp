@@ -148,10 +148,11 @@ export interface SearchNotesArgs {
 }
 
 /**
- * 7. get_backlinks 引數定義（查詢引用此筆記的所有來源）
+ * 7. get_backlinks 引數定義（查詢引用此筆記的所有來源與 Token 預算防護）
  */
 export interface GetBacklinksArgs {
   title: string;
+  limit?: number;
 }
 
 /**

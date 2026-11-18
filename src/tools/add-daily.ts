@@ -1,6 +1,11 @@
 import * as fs from "fs";
 import * as path from "path";
-import { getVaultPath, ensureDir, getTodayString } from "../lib/vault.js";
+import {
+  getVaultPath,
+  ensureDir,
+  getTodayString,
+  atomicWriteFileSync,
+} from "../lib/vault.js";
 
 export const addDailyLogSchema = {
   name: "add_daily_log",
@@ -28,15 +33,17 @@ export async function addDailyLog(args: { content: string }): Promise<string> {
 
   const now = new Date().toLocaleTimeString("zh-TW", { hour12: false });
 
+  let baseContent = "";
   if (!fs.existsSync(filePath)) {
     // 首次建立：寫入 Frontmatter 與標題
-    const header = `---\ntitle: ${today} Daily Log\ndate: ${today}\ntags: [daily, ai-log]\nsource: obsidian-mcp\n---\n\n# ${today}\n\n`;
-    fs.writeFileSync(filePath, header, "utf-8");
+    baseContent = `---\ntitle: ${today} Daily Log\ndate: ${today}\ntags: [daily, ai-log]\nsource: obsidian-mcp\n---\n\n# ${today}\n\n`;
+  } else {
+    baseContent = fs.readFileSync(filePath, "utf-8");
   }
 
   // 追加帶時間戳記的內容
   const entry = `\n## ${now}\n\n${args.content}\n`;
-  fs.appendFileSync(filePath, entry, "utf-8");
+  atomicWriteFileSync(filePath, baseContent + entry);
 
   return `✅ 已追加至每日日誌：daily/${today}.md`;
 }

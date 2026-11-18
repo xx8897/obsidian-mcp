@@ -12,7 +12,12 @@
 
 import * as fs from "fs";
 import * as path from "path";
-import { getVaultPath, getAllMdFiles, getSafeFilePath } from "../lib/vault.js";
+import {
+  getVaultPath,
+  getAllMdFiles,
+  getSafeFilePath,
+  extractNormalizedTags,
+} from "../lib/vault.js";
 import { readNote } from "../lib/frontmatter.js";
 import { FindRelatedNotesArgs, RelatedNoteItem } from "../types.js";
 
@@ -86,12 +91,9 @@ export async function findRelatedNotes(args: FindRelatedNotesArgs): Promise<stri
   const targetTitle = (targetParsed.frontmatter.title as string) ?? path.basename(targetFullPath, ".md");
 
   // 1. 建立目標筆記的特徵集合（標籤 + 外部連結）
-  const targetTags = new Set(
-    Array.isArray(targetParsed.frontmatter.tags)
-      ? targetParsed.frontmatter.tags.map((t) => String(t).trim().replace(/^#/, "").toLowerCase())
-      : []
-  );
+  const targetTags = new Set(extractNormalizedTags(targetParsed.frontmatter.tags));
   const targetOutgoingLinks = extractOutgoingLinks(targetParsed.content);
+  const targetBase = path.basename(targetFullPath, ".md").toLowerCase();
 
   const targetFeatures = new Set<string>();
   targetTags.forEach((t) => targetFeatures.add(`tag:${t}`));
@@ -115,19 +117,29 @@ export async function findRelatedNotes(args: FindRelatedNotesArgs): Promise<stri
       const otherParsed = readNote(filePath);
       const otherTitle = (otherParsed.frontmatter.title as string) ?? path.basename(filePath, ".md");
       const otherRel = path.relative(vaultPath, filePath).replace(/\\/g, "/");
+      const otherBase = path.basename(filePath, ".md").toLowerCase();
 
-      const otherTags = new Set(
-        Array.isArray(otherParsed.frontmatter.tags)
-          ? otherParsed.frontmatter.tags.map((t) => String(t).trim().replace(/^#/, "").toLowerCase())
-          : []
-      );
+      const otherTags = new Set(extractNormalizedTags(otherParsed.frontmatter.tags));
       const otherOutgoingLinks = extractOutgoingLinks(otherParsed.content);
 
       const otherFeatures = new Set<string>();
       otherTags.forEach((t) => otherFeatures.add(`tag:${t}`));
       otherOutgoingLinks.forEach((l) => otherFeatures.add(`link:${l}`));
 
-      const score = calculateJaccardSimilarity(targetFeatures, otherFeatures);
+      // 檢查一階直接引用關聯 (Graph distance = 1)
+      const directAtoB = targetOutgoingLinks.has(otherBase);
+      const directBtoA = otherOutgoingLinks.has(targetBase);
+
+      const pairTargetFeatures = new Set(targetFeatures);
+      const pairOtherFeatures = new Set(otherFeatures);
+
+      if (directAtoB || directBtoA) {
+        const directEdgeKey = `edge:${[targetBase, otherBase].sort().join("<->")}`;
+        pairTargetFeatures.add(directEdgeKey);
+        pairOtherFeatures.add(directEdgeKey);
+      }
+
+      const score = calculateJaccardSimilarity(pairTargetFeatures, pairOtherFeatures);
 
       if (score > 0) {
         // 找出交集項目
@@ -137,6 +149,8 @@ export async function findRelatedNotes(args: FindRelatedNotesArgs): Promise<stri
         });
 
         const commonLinks: string[] = [];
+        if (directAtoB) commonLinks.push(`直接引用 ➔ [[${otherTitle}]]`);
+        if (directBtoA) commonLinks.push(`被此篇引用 ⬅ [[${otherTitle}]]`);
         targetOutgoingLinks.forEach((l) => {
           if (otherOutgoingLinks.has(l)) commonLinks.push(l);
         });

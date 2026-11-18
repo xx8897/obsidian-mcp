@@ -11,7 +11,13 @@
  */
 
 import * as path from "path";
-import { getVaultPath, getAllMdFiles, getSafeFilePath, sanitizeFolderName } from "../lib/vault.js";
+import {
+  getVaultPath,
+  getAllMdFiles,
+  getSafeFilePath,
+  sanitizeFolderName,
+  extractNormalizedTags,
+} from "../lib/vault.js";
 import { readNote } from "../lib/frontmatter.js";
 import { SearchNotesArgs } from "../types.js";
 
@@ -64,9 +70,7 @@ export async function searchNotes(args: SearchNotesArgs): Promise<string> {
 
       // 標籤篩選
       if (filterTags.length > 0) {
-        const noteTags = Array.isArray(frontmatter.tags)
-          ? frontmatter.tags.map((t) => String(t).trim().replace(/^#/, "").toLowerCase())
-          : [];
+        const noteTags = extractNormalizedTags(frontmatter.tags);
         const hasMatchingTag = filterTags.some((ft) => noteTags.includes(ft));
         if (!hasMatchingTag) continue;
       }

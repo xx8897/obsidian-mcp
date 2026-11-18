@@ -1,0 +1,7 @@
+obsidian-mcp
+Copyright 2026 xx8897 and obsidian-mcp contributors
+
+This product includes software developed by xx8897 (https://github.com/xx8897/obsidian-mcp).
+
+A hardened, zero-dependency, local Model Context Protocol server providing direct Markdown I/O,
+atomic writes, and graph analysis for Obsidian Vaults.

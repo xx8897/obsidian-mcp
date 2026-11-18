@@ -12,7 +12,7 @@
 
 import * as fs from "fs";
 import matter from "gray-matter";
-import { getSafeFilePath } from "../lib/vault.js";
+import { getSafeFilePath, atomicWriteFileSync } from "../lib/vault.js";
 import { UpdateFrontmatterArgs } from "../types.js";
 
 export const updateFrontmatterSchema = {
@@ -98,7 +98,7 @@ export async function updateFrontmatter(args: UpdateFrontmatterArgs): Promise<st
 
   // 4. 原地重新序列化 Frontmatter 與保留原有正文
   const updatedRaw = matter.stringify(parsed.content, data);
-  fs.writeFileSync(filePath, updatedRaw, "utf-8");
+  atomicWriteFileSync(filePath, updatedRaw);
 
   return `✅ Frontmatter 元數據已成功原地更新：${args.path}`;
 }

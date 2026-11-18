@@ -18,6 +18,7 @@ import {
   titleToFilename,
   getTodayString,
   sanitizeFolderName,
+  atomicWriteFileSync,
 } from "../lib/vault.js";
 import { buildNoteContent } from "../lib/frontmatter.js";
 import { AddNoteArgs } from "../types.js";
@@ -69,7 +70,7 @@ export async function addNote(args: AddNoteArgs): Promise<string> {
     args.content
   );
 
-  fs.writeFileSync(filePath, noteContent, "utf-8");
+  atomicWriteFileSync(filePath, noteContent);
 
   const displayRelPath = path.join(targetFolder, filename).replace(/\\/g, "/");
   return `✅ 筆記已儲存：${displayRelPath}`;

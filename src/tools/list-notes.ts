@@ -11,7 +11,13 @@
  */
 
 import * as path from "path";
-import { getVaultPath, getAllMdFiles, getSafeFilePath, sanitizeFolderName } from "../lib/vault.js";
+import {
+  getVaultPath,
+  getAllMdFiles,
+  getSafeFilePath,
+  sanitizeFolderName,
+  extractNormalizedTags,
+} from "../lib/vault.js";
 import { readNote } from "../lib/frontmatter.js";
 import { ListNotesArgs } from "../types.js";
 
@@ -59,12 +65,10 @@ export async function listNotes(args: ListNotesArgs): Promise<string> {
     const rel = path.relative(vaultPath, filePath).replace(/\\/g, "/");
     try {
       const { frontmatter } = readNote(filePath);
-      const tagsList = Array.isArray(frontmatter.tags)
-        ? frontmatter.tags.map((t) => String(t).trim().replace(/^#/, ""))
-        : [];
+      const tagsList = extractNormalizedTags(frontmatter.tags);
 
       // 若指定標籤，檢驗是否匹配
-      if (queryTag && !tagsList.some((t) => t.toLowerCase() === queryTag)) {
+      if (queryTag && !tagsList.includes(queryTag)) {
         continue;
       }
 

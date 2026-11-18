@@ -60,6 +60,85 @@ export function titleToFilename(title: string): string {
 }
 
 /**
+ * 同目錄極簡原子寫入：先寫入同目錄暫存檔再 rename 覆蓋，避免寫入撕裂與並發鎖定衝突
+ */
+export function atomicWriteFileSync(filePath: string, content: string): void {
+  const dir = path.dirname(filePath);
+  ensureDir(dir);
+  const tempPath = `${filePath}.tmp.${Date.now()}.${Math.random().toString(36).slice(2, 8)}`;
+  try {
+    fs.writeFileSync(tempPath, content, "utf-8");
+    fs.renameSync(tempPath, filePath);
+  } catch (err) {
+    if (fs.existsSync(tempPath)) {
+      try {
+        fs.unlinkSync(tempPath);
+      } catch {
+        // 忽略暫存檔清除異常
+      }
+    }
+    throw err;
+  }
+}
+
+/**
+ * 統一正規化標籤解析：支援字串 (逗號/空白分隔)、陣列、帶 # 與不帶 # 格式
+ */
+export function extractNormalizedTags(tagsInput: unknown): string[] {
+  if (!tagsInput) return [];
+  const result: string[] = [];
+  const rawList: string[] = [];
+
+  if (Array.isArray(tagsInput)) {
+    for (const item of tagsInput) {
+      if (typeof item === "string") {
+        rawList.push(item);
+      }
+    }
+  } else if (typeof tagsInput === "string") {
+    rawList.push(...tagsInput.split(/[, ]+/));
+  }
+
+  for (const raw of rawList) {
+    const clean = raw.trim().replace(/^#+/, "").toLowerCase();
+    if (clean && !result.includes(clean)) {
+      result.push(clean);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * 移除 Markdown 中的程式碼區塊 (``` ... ``` 或 ~~~ ... ~~~) 與行內代碼 (`...`)
+ */
+export function stripCodeBlocks(content: string): string {
+  return content
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/~~~[\s\S]*?~~~/g, "")
+    .replace(/`[^`\n]*`/g, "");
+}
+
+/**
+ * 從筆記內文中提取所有 Wikilinks 目標標題集合（自動屏蔽程式碼區塊中的假連結）
+ */
+export function extractOutgoingLinks(content: string): Set<string> {
+  const links = new Set<string>();
+  const sanitizedContent = stripCodeBlocks(content);
+  const wikilinkRegex = /\[\[(.*?)\]\]/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = wikilinkRegex.exec(sanitizedContent)) !== null) {
+    const rawTarget = match[1].split("|")[0].split("#")[0].trim();
+    if (rawTarget) {
+      links.add(path.basename(rawTarget, ".md").toLowerCase());
+    }
+  }
+
+  return links;
+}
+
+/**
  * 遞迴取得指定目錄下所有 .md 檔案的完整路徑清單
  * 自動略過 .obsidian, .git, node_modules 等系統目錄
  */
